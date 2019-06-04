@@ -1,0 +1,524 @@
+#!/bin/bash
+#
+# Minecraft SMP Server startup script
+
+### BEGIN INIT INFO
+# Provides:          Minecraft
+# Required-Start:    $remote_fs $syslog $network
+# Required-Stop:     $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start Minecraft
+# Description:       Enable Minecraft server for #minecracy
+### END INIT INFO
+
+#Add to config:
+#BACKUP_DIRS="DIR1 DIR2 DIR3"
+#BACKUP_LIST_IGNORE=( DIR1 FILE1 FILE2 DIR2 )
+
+homedir=/home/minecraft
+icondir=$homedir/server-icons
+
+get_configuration() {
+    source /home/minecraft/minecraft.conf
+}
+
+dump_settings () {
+    local varnames="MC_USER MC_DIR MEM_USE HEY0_MOD GRACE_TIME MC_JAR"
+    local tmp
+    echo "# Minecraft server configuration"
+    echo "# Date: $(date)"
+    echo ""
+    for tmp in $varnames; do
+        echo "$tmp=${!tmp}"
+    done
+}
+
+getserverpids () {
+    ps -C java -o pid=,cmd= | grep $MC_JAR | awk '{ print $1 }' 2>/dev/null
+}
+
+server_send_message () {
+    local message=$*
+    tmux send-keys -t minecraft "$message" C-m
+}
+
+send_stop_cmd () {
+    server_send_message "stop"
+}
+
+construct_cmd () {
+    echo "cd $MC_DIR; tmux new-session -d -n minecraft -s minecraft \"/usr/bin/java -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false -Xms256M -Xmx${MEM_USE}M -XX:+UseConcMarkSweepGC -jar $MC_JAR nogui\""
+}
+
+server_is_up() {
+#   if [ ! -e ${MC_DIR}/server.log.lck ]; then
+#       # No lockfile means the server is almost certainly down.
+#       server_up="1"
+#       return 1
+#   else
+#       server_up="0"
+#   fi
+    [[ -n $(getserverpids) ]]
+#   status = [ `ps ux | grep tmux | grep -c $MC_JAR` -gt 0 ]
+
+#   return $status
+}
+
+server_start () {
+    local status
+    local cmd=$(construct_cmd)
+
+    echo "Running: $cmd"
+    eval $cmd
+    status=$?
+
+    if [ ! $status -eq 0 ]; then
+        echo "Error: Command exited with non-zero status!" >&2
+        exit
+    fi
+
+    for (( second=0; second < 30; second++ )); do
+        if server_is_up; then
+            echo "Minecraft server started successfully, needed $second seconds."
+			:>$MC_DIR/mcrunning
+            exit
+        fi
+        sleep 1
+    done
+    echo "Minecraft server failed to start properly."
+    exit 1
+}
+
+server_stop () {
+    local second
+    local cleanshutdown
+
+    rotate_servericon
+
+    if [ $GRACE_TIME -ne 0 ]; then
+        echo "Giving Minecraft players $GRACE_TIME seconds warning..."
+        server_send_message "say ACHTUNG: Der Server wird in $GRACE_TIME Sekunden heruntergefahren!"
+        sleep $GRACE_TIME
+    fi
+
+    server_send_message "say Der Server fährt JETZT herunter."
+    send_stop_cmd
+    for ((second=1 ; second < 30 ; second++)); do
+        sleep 1
+
+        if server_is_up; then
+            dummyvar=0
+        else
+            cleanshutdown="1"
+			rm $MC_DIR/mcrunning
+            break
+        fi
+    done
+    if [ "$cleanshutdown" == "1" ]; then
+        echo "Minecraft server stopped successfully."
+    else
+        echo "Minecraft server failed to shutdown within 30 seconds!" >&2
+        exit 1
+    fi
+}
+
+
+# Backup stuff functions
+
+backup_list () {
+    list=$(ls -p "${MC_DIR}/backups")
+    bold=$(tput bold)
+    normal=$(tput sgr0)
+    for entry in $list; do
+        entry="${entry%?}"
+        ignore=1
+        for ((i=0; i < ${#BACKUP_LIST_IGNORE[@]}; i++ )); do
+            if [ "$entry" == "${BACKUP_LIST_IGNORE[$i]}" ]; then
+                ignore=0
+            fi
+        done
+        if [ $ignore == 1 ]; then
+            echo "${bold}${entry}${normal}"
+            if [ -e ${MC_DIR}/backups/${entry}/backup_info ]; then
+                cat ${MC_DIR}/backups/${entry}/backup_info
+            else
+                echo "Backup Information for ${entry} not found."
+            fi
+            echo " "
+        fi
+    done
+}
+
+backup_Log () {
+    if server_is_up; then
+        echo "Cannot backup server.log while server is running."
+        exit
+    fi
+    timestamp=$(date "+%Y-%m-%d")
+}
+
+backup_data () {
+    arg_o=1
+    arg_s=1
+    arg_n=1
+    if [ $# != 1 ]; then
+        typeArgs=$1
+        for (( i=0; i < ${#typeArgs}; i++ )); do
+            if [ "${typeArgs:$i:1}" == "o" ]; then
+                arg_o=0
+            elif [ "${typeArgs:$i:1}" == "s" ]; then
+                arg_s=0
+                echo "Will simulate backup."
+            elif [ "${typeArgs:$i:1}" == "n" ]; then
+                arg_n=0
+            fi
+        done
+    fi
+    if [ ${arg_n} == 0 ]; then
+        noteArg="${2}"
+    fi
+    backup_name=${!#}
+
+    if [ -d "${MC_DIR}/backups/${backup_name}" ]; then
+        if [ ${arg_o} == 0 ]; then
+            echo "Backup \"${backup_name}\" already exists and will be overwritten."
+            if [ ${arg_s} == 1 ]; then
+                backup_remove $backup_name
+            else
+                echo "Backup removed [simulated]."
+            fi
+        else
+            echo "Backup \"${backup_name}\" already exists. To overwrite, set -o flag."
+            exit
+        fi
+    fi
+
+    # Do actual backup
+    save_off=1
+    if server_is_up; then
+        echo "Server is running, doing save-off; save-all"
+        server_send_message "save-off"
+        server_send_message "save-all"
+        save_off=0
+        echo "Server world saving switched off."
+    fi
+    echo "Copy data:"
+    if [ $arg_s == 1 ]; then
+        mkdir "${MC_DIR}/backups/${backup_name}"
+        for (( i=0; i < ${#BACKUP_DIRS[@]}; i++ )); do
+            echo "Copying ${BACKUP_DIRS[$i]} ..."
+            cp -a ${BACKUP_DIRS[$i]} ${MC_DIR}/backups/${backup_name}
+        done
+        if [ ! -d "${MC_DIR}/backups/${backup_name}" ]; then
+            echo "Copy process failed. Do you have writing permission in ${MC_DIR}/backups/${backup_name}?"
+            exit
+        fi
+    else
+        for (( i=0; i < ${#BACKUP_DIRS[@]}; i++ )); do
+            echo "Copying ${BACKUP_DIRS[$i]} ..."
+        done
+    fi
+    echo "Backup written to ${MC_DIR}/backups."
+    if server_is_up; then
+        server_send_message "save-on"
+        echo "Server world saving switched on."
+    elif [ $save_off == 0 ]; then
+        echo "Server exited while doing backup. Could not set \"save-on\"."
+    fi
+
+    # Provide extra information about the backup
+    timestamp=$(date "+%d.%m.%Y %T")
+    if [ $arg_n == 0 ]; then
+        template=$noteArg
+        backup_reason=""
+        echo "Using $noteArg as template for backup_info."
+    else
+        template="${MC_DIR}/backups/script_resource/std_template"
+        echo "Enter backup reason, i.e. \"before update from x to z\""
+        read -e backup_reason
+    fi
+    if [ $arg_s == 1 ]; then
+        touch ${MC_DIR}/backups/${backup_name}/backup_info
+        sed     -e "s;%date%;$timestamp;"\
+            -e "s;%mc_ver%;$MC_VER;"\
+            $template > ${MC_DIR}/backups/${backup_name}/backup_info
+        echo "$backup_reason" >> ${MC_DIR}/backups/${backup_name}/backup_info
+    fi
+    echo "Backup info written."
+
+    #if [ $arg_s == 1 ]; then
+    #    chmod -R u-w "${MC_DIR}/backups/${backup_name}"
+    #fi
+}
+
+backup_remove () {
+    if [ -d "${MC_DIR}/backups/$1" ]; then
+        for (( i=0; i < ${#BACKUP_LIST_IGNORE[@]}; i++ )); do
+            if [ ${BACKUP_LIST_IGNORE[$i]} == $1 ]; then
+                echo "This is not a backup. I will not remove or overwrite it."
+                exit
+            fi
+        done
+        chmod -R u+w "${MC_DIR}/backups/$1"
+        rm -rf "${MC_DIR}/backups/$1"
+        echo "Backup $1 removed."
+    else
+        echo "Backup $1 does not exist, so obviously I cannot remove it."
+        exit
+    fi
+}
+
+rotate_servericon() {
+    icon=$(ls $icondir/*.png | shuf -n 1)
+    cp $icon $homedir/server-icon.png
+}
+
+get_configuration
+
+
+# User Interface
+
+case "$1" in
+    'start')
+        if server_is_up; then
+            echo "The minecraft server is already running."
+        else
+            server_start
+        fi
+    ;;
+    'stop')
+        if server_is_up; then
+            if [ "$2" == "-f" ]; then
+                GRACE_TIME=0
+            fi
+            server_stop
+        else
+            echo "The minecraft server is not running."
+        fi
+    ;;
+    'restart')
+        if server_is_up; then
+            if [ "$2" == "-f" ]; then
+                GRACE_TIME=0
+            fi
+            server_stop
+            sleep 5
+            server_start
+        else
+            echo "The minecraft server is not running."
+        fi
+    ;;
+    'autorestart')
+        if [ -e ~/mcrunning ] && ! server_is_up ] ; then
+            server_start
+        fi
+    ;;
+    'status')
+        if [ "$2" == "-s" ]; then
+            if server_is_up; then
+                echo "1"
+            else
+                echo "0"
+            fi
+        else
+            if server_is_up; then
+                echo "The minecraft server is currently running."
+            else
+                echo "The minecraft server is currently NOT running."
+            fi
+        fi
+    ;;
+        'backup')
+                cd $homedir
+
+        #argument check
+        if [ $# -eq 1 ]; then
+less <<EOF
+Usage: $0 backup [arguments] BACKUP_NAME
+Creates a backup of the server files.
+The backup will be named "BACKUP_NAME" and be located in a directory called
+"backups" which is located besides the server files.
+Backups are read-only, so make sure to give writing permissions when restoring.
+
+
+Arguments:
+
+-e    execute:  Executes a given shell script before doing backup, even
+        before checking if the backup already exists.
+
+-l       list:  Lists all backups.
+
+-n       note:  Reads the backup note from a given file.
+
+-o  overwrite:  Overwrites any existing backup named as the given
+                backup name.
+
+-r     remove:  Removes the given backup.
+
+-s   simulate:  Simulates a backup process without actually writing anything.
+                Mainly made for debugging and testing.
+
+EOF
+            exit
+        fi
+        #Map:   i  0 1 2 3 4 5
+        args_map=( e l n o r s )
+            args=( 1 1 1 1 1 1 )
+        possible_strArgs=( e n )
+        strArgs=( "${!#}" ) # stores the string arguments
+        strArgs_types=( b ) # stores the mapping of string arguments
+        count=2 #cause the for is for ... in
+
+        for i in "${@:2}"; do
+            # Handle Type Arguments
+            if [ "${i:0:1}" == "-" ]; then
+                for ((j=1; j < ${#i}; j++ )); do
+                    # Collect String Argument Types in the right order
+                    for (( k=0; k < ${#possible_strArgs[@]}; k++ )); do
+                        strArg_type=${possible_strArgs[$k]}
+                        if [ "${i:$j:1}" == $strArg_type ]; then
+                            strArgs_types[${#strArgs_types[@]}]=$strArg_type
+                        fi
+                    done
+                    # Set Booleans in $args if argument is passed
+                    for (( arg=0; arg <= ${#args[@]}; arg++ )); do
+                        if [ "${i:$j:1}" == "${args_map[$arg]}" ]; then
+                            args[$arg]=0
+                        fi
+                    done
+                done
+            # Handle String Arguments
+            elif [ "$count" != "$#" ]; then
+                strArgs[${#strArgs[@]}]="$i"
+            fi
+            count=$((count + 1))
+        done
+        # Check for compatibility of arguments. In case of list, Log
+        # or remove, immediately act as desired.
+        # Otherwise, do backup after check.
+        for (( i=0; i <= ${#args[@]}; i++ )); do
+            if [ "${args[$i]}" == 0 ]; then
+                case "${args_map[$i]}" in
+                    'L')
+                        for (( j=0; j <= ${#args[@]}; j++ )); do
+                            if [ "${args[$j]}" == 0 ] && [ "${args_map[$j]}" != 'L' ]; then
+                                echo "-L is incompatible to all other arguments."
+                                exit
+                            fi
+                        done
+                        backup_Log
+                        exit
+                    ;;
+                    'l')
+                        for (( j=0; j <= ${#args[@]}; j++ )); do
+                            if [ "${args[$j]}" == 0 ] && [ "${args_map[$j]}" != 'l' ]; then
+                                echo "-l is incompatible to all other arguments."
+                                exit
+                            fi
+                        done
+                        backup_list
+                        exit
+                    ;;
+                    'r')
+                        for (( j=0; j <= ${#args[@]}; j++ )); do
+                            if [ "${args[$j]}" == 0 ] && [ "${args_map[$j]}" != 'r' ]; then
+                                echo "-r is incompatible to all other arguments."
+                                exit
+                            fi
+                        done
+                        if [ $# == 2 ]; then
+                            echo "No backup name given to remove."
+                            exit
+                        fi
+                    ;;
+                esac
+            fi
+        done
+
+        # just in case something weird happens and the mapping above goes wrong
+        if [ ${#strArgs[@]} != ${#strArgs_types[@]} ]; then
+            echo "Error: Argument mapping went wrong"
+            exit
+        fi
+
+        # pass arguments to data_backup()
+        passArgs=""
+        noteArg=""
+        sim=1
+        exec=1
+        overwrite=1
+        backup_name="${strArgs[0]}"
+        for (( i=0; i < ${#args[@]}; i++ )); do
+            if [ "${args[$i]}" == 0 ]; then
+                case ${args_map[$i]} in
+                    'l')
+                        backup_list
+                        exit
+                    ;;
+                    'e')
+                        for (( j=0; j <= ${#strArgs}; j++ )); do
+                            if [ "${strArgs_types[$j]}" == 'e' ]; then
+                                exec_arg=${strArgs[$j]}
+                            fi
+                        done
+                        if [ "${exec_arg}" == "" ]; then
+                            echo "Error: Execute argument is empty."
+                            exit
+                        fi
+                        exec=0
+                    ;;
+                    'l')
+                        backup_list
+                        exit
+                    ;;
+                    'n')
+                        for (( j=0; j <= ${#strArgs[@]}; j++ )); do
+                            if [ "${strArgs_types[$j]}" == "n" ]; then
+                                passArgs+='n'
+                                noteArg=${strArgs[$j]}
+                            fi
+                        done
+                    ;;
+                    'o')
+                        passArgs+='o'
+                        overwrite=0
+                    ;;
+                    'r')
+                        backup_remove "${backup_name}"
+                        exit
+                    ;;
+                    's')
+                        passArgs+='s'
+                        sim=0
+                    ;;
+                esac
+            fi
+        done
+        passArgs+=" ${noteArg}"
+        if [ $exec == 0 ]; then
+            if [ ! -d ${MC_DIR}/backups/${backup_name} ]; then
+                echo "Executing: ${exec_arg}"
+                . "${exec_arg}"
+            else
+                if [ $overwrite == 0 ]; then
+                    echo "Executing: ${exec_arg}"
+                    . "${exec_arg}"
+                else
+                    echo "${MC_DIR}/backups/${backup_name} already exists."
+                    echo "Use -o flag to overwrite it."
+                fi
+            fi
+        fi
+        backup_data $passArgs $noteArg $backup_name
+        exit
+    ;;
+    'dumpconfig')
+        dump_settings
+    ;;
+    *)
+        echo "Usage: $0 start|stop|restart|status|backup|dumpconfig"
+    ;;
+esac
+
+# vim: set ts=2:
