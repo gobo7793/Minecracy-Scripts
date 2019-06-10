@@ -105,18 +105,16 @@ mcmessend(){
     mctype=$1
     shift
     mcmess="$@"
-    if (( $mctype == 1 || $mctype == 2 )); then
+    if [[ $mctype == 1 || $mctype == 2 ]]; then
         mcmess="[MAPS] $@"
     fi
     
     log "tmux (type=$mctype) -> $mcmess"
-    if (( $mctype == 0 )); then
+    if [[ $mctype == 0 ]]; then
         tmuxsend "$mcmess"
-    fi
-    elif (( $mctype == 1 )); then
+    elif [[ $mctype == 1 ]]; then
         tmuxsend "say $mcmess"
-    fi
-    elif (( $mctype == 2 )); then
+    elif [[ $mctype == 2 ]]; then
         tmuxsend "discord broadcast $mcmess"
     fi
 }
