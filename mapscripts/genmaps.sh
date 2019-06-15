@@ -21,7 +21,7 @@ monthlydir="/home/minecraft/backups/monthly"
 # tool directories
 tmcmrdir="$mapsdir/BlockMap/BlockMap-1.2.0.jar"
 overviewerdir="$mapsdir/Overviewer"
-railwayscript="$mapsdir/bahnstrecken.py"
+railwayscript="$mapsdir/bahnstrecken_fast.py"
 trimtool="$mapsdir/Minecraft-Map-Auto-Trim/mmat-fix.jar"
 safezonescript="$mapsdir/szmap.py"
 
@@ -422,7 +422,7 @@ gen2drail(){
     tmcmr $w $worldmax $railcolors bahn
 
     #render_svgtoraster $railwaysvg $railwaypng
-    per python $railwayscript "$basedir/tmcmr/big.png" $rawlayerfile
+    per python3 $railwayscript "$basedir/tmcmr/big.png" $rawlayerfile
 
     gmcrop "$basedir/tmcmr/big.png" $rawrailwayfile
     gmcrop $rawlayerfile $rawlayerfilecropped
