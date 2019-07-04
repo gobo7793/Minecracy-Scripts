@@ -19,7 +19,7 @@ weeklydir="/home/minecraft/backups/weekly"
 monthlydir="/home/minecraft/backups/monthly"
 
 # tool directories
-tmcmrdir="$mapsdir/BlockMap/BlockMap-1.2.0.jar"
+tmcmrdir="$mapsdir/BlockMap/BlockMap-1.4.0.jar"
 overviewerdir="$mapsdir/Overviewer"
 railwayscript="$mapsdir/bahnstrecken_fast.py"
 trimtool="$mapsdir/Minecraft-Map-Auto-Trim/mmat-fix.jar"
@@ -142,7 +142,7 @@ tmcmr(){
         subdir="/$4"
     fi
 
-    per "/usr/bin/java -jar $tmcmrdir render --lazy --create-big-image --create-tile-html $colormap --max-X=$size --max-Z=$size --min-X=-$size --min-Z=-$size -o $mapstargetdir/$w$subdir/tmcmr/ $dailydir/$w/region/"
+    per "/usr/bin/java -jar $tmcmrdir render --lazy --create-big-image --create-tile-html $colormap --max-X=$size --max-Z=$size --min-X=-$size --min-Z=-$size -o $mapstargetdir/$w$subdir/tmcmr/ $dailydir/$w/region/" #old blockmap syntax
 }
 
 # Renews the overviewer and markers

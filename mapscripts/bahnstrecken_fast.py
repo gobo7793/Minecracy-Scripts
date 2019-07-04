@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import os
 
@@ -19,7 +21,7 @@ threshold_max = 255
 drawing params
 =============================='''
 contour_width = 5
-color = (0,0,255,0)
+color = (2,2,142,255)
 
 '''==============================
 usage
@@ -61,7 +63,7 @@ def getTrackImage(im,
     im_r = np.zeros([im.shape[0], im.shape[1], 4])
 
     # draw final image
-    im_r = cv2.drawContours(im_r, contours, -1, (0,0,255,255), contour_width)
+    im_r = cv2.drawContours(im_r, contours, -1, color, contour_width)
 
     return im_r
 
@@ -88,6 +90,6 @@ if __name__ == '__main__':
                                     threshold_min,
                                     threshold_max,
                                     contour_width,
-                                    color)   
+                                    color)
 
         cv2.imwrite(path_to_output_image, track_image)
