@@ -350,7 +350,7 @@ resize2d(){
         local size="$3"
     fi
 
-    gmcrop $basefile $basefile $((size*2))
+    #gmcrop $basefile $basefile $((size*2))
     gmcon $basefile "$basedir/current-$((size*2))px.jpg"
     gmmapres $basefile $basedir 5000
     gmmapres $basefile $basedir 2500
