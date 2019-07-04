@@ -132,17 +132,18 @@ remove_old_logs(){
 # Generates new 2D map
 # $1: world directory
 # $2: world size
-# $3: colormap file (optional)
-# $4: subdirectory in world directory for target (optional based on $2)
+# $3: colormap name (optional)
+# $4: subdirectory in world directory for target (only if $3 given)
 tmcmr(){
     w="$1"
     size="$2"
     if [[ -n $3 && -n $4 ]]; then
-        colormap="--custom-color-map $3 --shader=FLAT"
+        colormap="--color-map $3 --shader=FLAT"
         subdir="/$4"
     fi
 
-    per "/usr/bin/java -jar $tmcmrdir render --lazy --create-big-image --create-tile-html $colormap --max-X=$size --max-Z=$size --min-X=-$size --min-Z=-$size -o $mapstargetdir/$w$subdir/tmcmr/ $dailydir/$w/region/" #old blockmap syntax
+    #per "/usr/bin/java -jar $tmcmrdir render --lazy --create-big-image --create-tile-html $colormap --max-X=$size --max-Z=$size --min-X=-$size --min-Z=-$size -o $mapstargetdir/$w$subdir/tmcmr/ $dailydir/$w/region/" #old blockmap syntax
+    per "/usr/bin/java -jar $tmcmrdir render --lazy --create-big-image --create-tile-html $colormap --max-X=$size --max-Z=$size --min-X=-$size --min-Z=-$size -o $mapstargetdir/$w$subdir/tmcmr/ $dailydir/$w/region/"
 }
 
 # Renews the overviewer and markers
@@ -419,7 +420,7 @@ gen2drail(){
     rawlayerfilecropped="$basedir/current-layer.png"
     rawrailwayfile="$basedir/current-raw.png"
 
-    tmcmr $w $worldmax $railcolors bahn
+    tmcmr $w $worldmax RAILS bahn
 
     #render_svgtoraster $railwaysvg $railwaypng
     per python3 $railwayscript "$basedir/tmcmr/big.png" $rawlayerfile
