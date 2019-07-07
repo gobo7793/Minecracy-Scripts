@@ -7,9 +7,9 @@ mapscript="/home/minecraft/maps/genmaps.sh"
 source $mapscript
 
 #remove server logs older than 6 months
-find $mclogdir/ -mtime +176 -type f -delete
+find $mclogdir/ -mtime +358 -type f -delete
 find $maplogdir/ -mtime +30 -type f -delete
-tmux send-keys -t minecraft 'co purge t:183d #optimize' C-m
+tmux send-keys -t minecraft 'co purge t:365d #optimize' C-m
 
 #remove ips in server logs older than 7 days
 logfiles=$(find $mclogdir/*.log.gz -mtime +7 -type f)
