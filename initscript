@@ -43,6 +43,11 @@ server_send_message () {
     tmux send-keys -t minecraft "$message" C-m
 }
 
+server_send_chat_message () {
+    server_send_message "say $*"
+    server_send_message "discord bcast $*"
+}
+
 send_stop_cmd () {
     server_send_message "stop"
 }
@@ -99,7 +104,10 @@ server_stop () {
     if [ $GRACE_TIME -ne 0 ]; then
         echo "Giving Minecraft players $GRACE_TIME seconds warning..."
         server_send_message "say ACHTUNG: Der Server wird in $GRACE_TIME Sekunden heruntergefahren!"
+        server_send_message "discord bcast :warning: **ACHTUNG: Der Server wird in $GRACE_TIME Sekunden heruntergefahren!**"
         sleep $GRACE_TIME
+    else
+        server_send_message "discord bcast :octagonal_sign: **Der Server wurde heruntergefahren. Einfach so.**"
     fi
 
     server_send_message "say Der Server fährt JETZT herunter."
