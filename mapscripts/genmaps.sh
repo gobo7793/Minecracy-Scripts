@@ -523,7 +523,7 @@ fullgen(){
     
     if [[ $(date '+%d') == 01 ]]; then
         log "Nutze Overviewer mit --check-tiles"
-        ovChecktiles="true"
+        ovChecktiles="ct"
     fi
 
     mcsd "Generiere Overviewer."
