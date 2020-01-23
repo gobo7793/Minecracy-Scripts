@@ -2,11 +2,13 @@
 
 # current world names
 world="world5"
+world2="world6"
 worldc="world5_creative"
 worldn="world5_nether"
 
 # world sizes
 worldmax=5000
+world2max=5000
 worldcmax=3000
 
 # base directories
@@ -15,6 +17,7 @@ mapstargetdir="$mapsdir/maps.minecracy.de"
 configdir="$mapsdir/config"
 maplogdir="$mapsdir/logs"
 origworlddir="/home/minecraft/$world"
+origworld2dir="/home/minecraft/$world2"
 dailydir="/home/minecraft/backups/daily"
 weeklydir="/home/minecraft/backups/weekly"
 monthlydir="/home/minecraft/backups/monthly"
@@ -322,22 +325,22 @@ backups(){
 }
 
 # Trim backups
-trim_backups(){
-    log "Trimme Backups"
-
-    log "Trimme tägliches Backup"
-    trim $dailydir/$world
-
-    if [[ $(date '+%u') == 1 ]]; then
-        log "Trimme wöchentliches Backup"
-        # nothing to do because weekly default trim
-    fi
-
-    if [[ $(date '+%d') == 01 ]]; then
-        log "Trimme monatliches Backup"
-        trim $monthlydir/$world
-    fi
-}
+#trim_backups(){
+#    log "Trimme Backups"
+#
+#    log "Trimme tägliches Backup"
+#    trim $dailydir/$world
+#
+#    if [[ $(date '+%u') == 1 ]]; then
+#        log "Trimme wöchentliches Backup"
+#        # nothing to do because weekly default trim
+#    fi
+#
+#    if [[ $(date '+%d') == 01 ]]; then
+#        log "Trimme monatliches Backup"
+#        trim $monthlydir/$world
+#    fi
+#}
 
 # Generates the thumbnails
 # $1: source file
@@ -353,8 +356,8 @@ resize2d(){
 
     #gmcrop $basefile $basefile $((size*2))
     gmcon $basefile "$basedir/current-$((size*2))px.jpg"
-    gmmapres $basefile $basedir 5000
-    gmmapres $basefile $basedir 2500
+    gmmapres $basefile $basedir $size
+    gmmapres $basefile $basedir $((size/2))
     gmmapres $basefile $basedir 150
 }
 
@@ -397,21 +400,27 @@ raster2d(){
 
 # Generates the project map
 # $1: world maps base directory
+# $2: world size (optional, else $worldmax)
 project2d(){
     basedir="$1/grenzen"
     rawfile="$1/$currMonth.png"
     basefile="$basedir/$currMonth.png"
+    local size="$worldmax"
+    if [[ -n $2 ]]; then
+        local size="$2"
+    fi
 
     render_svgtoraster $projectsvg $projectpng
 
     gmcomp $projectpng $rawfile $basefile
 
-    resize2d $basefile $basedir
+    resize2d $basefile $basedir $size
 }
 
 # Generates the railway map (uses $worldmax)
 # $1: world directory name
 # $2: world maps base directory
+# $3: world size (optional, else $worldmax)
 gen2drail(){
     w="$1"
     basedir="$2/bahn"
@@ -420,6 +429,10 @@ gen2drail(){
     rawlayerfile="$basedir/tmcmr/bahn.png"
     rawlayerfilecropped="$basedir/current-layer.png"
     rawrailwayfile="$basedir/current-raw.png"
+    local size="$worldmax"
+    if [[ -n $2 ]]; then
+        local size="$2"
+    fi
 
     tmcmr $w $worldmax RAILS bahn
 
@@ -432,29 +445,34 @@ gen2drail(){
     gmcomp $rawlayerfilecropped $rawfile $basefile
     gmcomp $railwaypng $basefile $basefile
 
-    resize2d $basefile $basedir
+    resize2d $basefile $basedir $size
 }
 
 # Generates the safezone map
 # $1: world directory name
 # $2: world maps base directory
+# $3: world size (optional, else $worldmax)
 gen2dsafezones(){
     w="$1"
     basedir="$2/sz"
     basefile="$basedir/$currMonth.png"
     rawfile="$2/$currMonth.png"
     rawszfile="$basedir/current-raw.png"
+    local size="$worldmax"
+    if [[ -n $2 ]]; then
+        local size="$2"
+    fi
 
     per python3 $safezonescript $safezonelist $rawszfile
     gmcomp $rawszfile $rawfile $basefile
 
-    resize2d $basefile $basedir
+    resize2d $basefile $basedir $size
 }
 
 # Generates all 2D maps for the world
 # $1: world directory name
 # $2: not empty for generating project and railway maps
-# $3: world size (optional, else $worldmax, only for raw and raster maps)
+# $3: world size (optional, else $worldmax)
 gen2d(){
     w="$1"
     extendedmaps=false
@@ -479,15 +497,15 @@ gen2d(){
 
     if [[ $extendedmaps == true ]]; then
         log "Generiere Grenzkarte $w"
-        project2d $rawdir
+        project2d $rawdir $size
         mcs "Generierung der Grenzkarte von $w abgeschlossen."
 
         log "Generiere Safezone-Karte $w"
-        gen2dsafezones $w $rawdir
+        gen2dsafezones $w $rawdir $size
         mcs "Generierung der Safezone-Karte von $w abgeschlossen."
 
         log "Generiere Bahnkarte $w"
-        gen2drail $w $rawdir
+        gen2drail $w $rawdir $size
         mcs "Generierung der Bahnkarte von $w abgeschlossen."
     fi
     
@@ -500,8 +518,10 @@ fullgen(){
     
     # return value used to calculation if any played the day, so no per function is used!
     playerdatadate=$(stat -c "%Y" "$origworlddir/playerdata/")
+    playerdata2date=$(stat -c "%Y" "$origworld2dir/playerdata/")
     yesterday=$(date -d "24 hours ago" +%s)
     if [[ $yesterday -ge $playerdatadate ]] && [[ $(date '+%d') != 01 ]]; then
+    #if ([[ $yesterday -ge $playerdatadate ]] || [[ $yesterday -ge $playerdata2date ]]) && [[ $(date '+%d') != 01 ]]; then
         log "Letzter Spieler offline am $(stat -c "%y" "$dailydir/$world/playerdata/")."
         log "Breche Kartenscript ab, da Datum vor $(date -d "24 hours ago")."
         return
@@ -510,9 +530,9 @@ fullgen(){
     mcsd "Kartenscript wurde gestartet!"
 
     init_kickall
-    #trim $world
     if [[ $(date '+%u') == 1 ]]; then
         trim $world $worldmax
+        #trim $world2 $world2max
         per sleep 10
     fi
     trim $worldc $worldcmax
@@ -529,8 +549,9 @@ fullgen(){
 
     log "Beginne mit Kartengenerierung"
 
-    gen2d $worldc false $worldcmax
     gen2d $world true $worldmax
+    #gen2d $world2 true $world2max
+    gen2d $worldc false $worldcmax
     
     if [[ $(date '+%d') == 01 ]]; then
         log "Nutze Overviewer mit --check-tiles"
@@ -578,14 +599,14 @@ Commands:
   daily                             Generates all daily maps. Only executes if
                                       anyone was online in the last 24h.
   daily <world> [extended]          Generates all daily 2D maps for the world,
-                                      set extended true for project/rail...
-  gen raw <world> <worldmapsdir>    Generates raw map to worldmapsdir
-  gen raster <worldmapsdir>         Generates raster map in worldmapsdir
-  gen project <worldmapsdir>        Generates project map in worldmapsdir
-  gen rail <world> <worldmapsdir>   Generates railway map in worldmapsdir
-  gen sz <world> <worldmapsdir>     Generates safezone map in worldmapsdir
-                                    Note: worldmapsdir must be full base path
-                                    for the world like maps.minecracy.de/world5
+                                      set extended true more than raw/raster.
+
+  gen <raw|raster|project|rail|sz> <world> <worldmapsdir> [worldsize]
+                                    Generates map type of world to worldmapsdir.
+                                      worldmapsdir must be full base path for the
+                                      world like maps.minecracy.de/world5.
+                                      If no worldsize given, default world size
+                                      will be used.
 EOM
   #trimbackup                        Trims all backups
 }
