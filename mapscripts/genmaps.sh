@@ -14,6 +14,7 @@ mapsdir="/home/minecraft/maps"
 mapstargetdir="$mapsdir/maps.minecracy.de"
 configdir="$mapsdir/config"
 maplogdir="$mapsdir/logs"
+origworlddir="/home/minecraft/$world"
 dailydir="/home/minecraft/backups/daily"
 weeklydir="/home/minecraft/backups/weekly"
 monthlydir="/home/minecraft/backups/monthly"
@@ -496,6 +497,16 @@ gen2d(){
 # Generates all daily maps with backup
 fullgen(){
     log "Kartenscript gestartet"
+    
+    # return value used to calculation if any played the day, so no per function is used!
+    playerdatadate=$(stat -c "%Y" "$origworlddir/playerdata/")
+    yesterday=$(date -d "24 hours ago" +%s)
+    if [[ $yesterday -ge $playerdatadate ]] && [[ $(date '+%d') != 01 ]]; then
+        log "Letzter Spieler offline am $(stat -c "%y" "$dailydir/$world/playerdata/")."
+        log "Breche Kartenscript ab, da Datum vor $(date -d "24 hours ago")."
+        return
+    fi
+    
     mcsd "Kartenscript wurde gestartet!"
 
     init_kickall
@@ -564,7 +575,8 @@ Commands:
   tmcmr <world> [colormap subdir]   Renews 2D map, optionally using colormap
                                       and to world subdir as destination
 
-  daily                             Generates all daily maps
+  daily                             Generates all daily maps. Only executes if
+                                      anyone was online in the last 24h.
   daily <world> [extended]          Generates all daily 2D maps for the world,
                                       set extended true for project/rail...
   gen raw <world> <worldmapsdir>    Generates raw map to worldmapsdir
