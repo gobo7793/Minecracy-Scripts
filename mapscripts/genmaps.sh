@@ -99,13 +99,17 @@ mcsd(){
     mcmessend 2 "$@"
 }
 
-# Sends the message to minecraft as command, say oder say+discord
+# Sends the message to minecraft as command, say oder say+discord, if $mcout is true
 # $1: Indicates the message type:
 #       0: command (default)
 #       1: say to minecraft ingame chat
 #       2: say to minecraft ingame chat and discord chat
 # $@: the message to send
 mcmessend(){
+    if [[ "$mcout" == false ]]; then
+        return
+    fi
+    
     mctype=$1
     shift
     mcmess="$@"
@@ -347,18 +351,19 @@ backups(){
 # $2: target directory
 # $3: world size (optional, else $worldmax)
 resize2d(){
-    basefile="$1"
-    basedir="$2"
+    local resBasefile="$1"
+    local resBasedir="$2"
     local size="$worldmax"
     if [[ -n $3 ]]; then
         local size="$3"
     fi
 
     #gmcrop $basefile $basefile $((size*2))
-    gmcon $basefile "$basedir/current-$((size*2))px.jpg"
-    gmmapres $basefile $basedir $size
-    gmmapres $basefile $basedir $((size/2))
-    gmmapres $basefile $basedir 150
+    
+    gmcon $resBasefile "$resBasedir/current-$((size*2))px.jpg"
+    gmmapres $resBasefile $resBasedir $size
+    gmmapres $resBasefile $resBasedir $((size/2))
+    gmmapres $resBasefile $resBasedir 150
 }
 
 # Generates the raw map
@@ -431,7 +436,7 @@ gen2drail(){
     rawrailwayfile="$basedir/current-raw.png"
     local size="$worldmax"
     if [[ -n $2 ]]; then
-        local size="$2"
+        local size="$3"
     fi
 
     tmcmr $w $worldmax RAILS bahn
@@ -460,12 +465,11 @@ gen2dsafezones(){
     rawszfile="$basedir/current-raw.png"
     local size="$worldmax"
     if [[ -n $2 ]]; then
-        local size="$2"
+        local size="$3"
     fi
 
     per python3 $safezonescript $safezonelist $rawszfile
     gmcomp $rawszfile $rawfile $basefile
-
     resize2d $basefile $basedir $size
 }
 
