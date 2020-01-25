@@ -6,8 +6,10 @@ essentialsdatadir="/home/minecraft/plugins/Essentials/userdata"
 mapscript="/home/minecraft/maps/genmaps.sh"
 source $mapscript
 
-#remove server logs older than 6 months
-find $mclogdir/ -mtime +358 -type f -delete
+#remove server logs older than a year and map logs older than a month
+# see https://unix.stackexchange.com/a/288031
+find $mclogdir/ -type f -name '*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9].log.gz' -exec sh -c 'fdate="${1%-?.log.gz}"; fdate="${fdate##*/}"; [ "$fdate" "<" "$(date +%F -d "1 year ago")" ] && rm "$1"' find-sh {} \;
+#find $mclogdir/ -mtime +358 -type f -delete
 find $maplogdir/ -mtime +30 -type f -delete
 tmux send-keys -t minecraft 'co purge t:365d #optimize' C-m
 
