@@ -3,13 +3,12 @@
 # current world names
 world="world5"
 world2="world6"
-worldc="world5_creative"
-worldn="world5_nether"
+worldc="world6_creative"
 
 # world sizes
 worldmax=5000
 world2max=5000
-worldcmax=3000
+worldcmax=500
 
 # base directories
 mapsdir="/home/minecraft/maps"
@@ -23,7 +22,7 @@ weeklydir="/home/minecraft/backups/weekly"
 monthlydir="/home/minecraft/backups/monthly"
 
 # tool directories
-mapgentool="$mapsdir/BlockMap/BlockMap-cli-1.5.1.jar"
+mapgentool="$mapsdir/BlockMap/BlockMap-cli-1.5.1.1.jar"
 overviewerdir="$mapsdir/Overviewer"
 railwayscript="$mapsdir/bahnstrecken_fast.py"
 trimtool="$mapsdir/Minecraft-Map-Auto-Trim/mmat-fix.jar"
@@ -299,7 +298,7 @@ trim(){
     log "Trimme Welt $w"
 
     mc "wb $w set $size 0 0"
-    mc "wb $w trim 500 0"
+    mc "wb $w trim 1000 0"
     mc "wb trim confirm"
     per sleep 120
     mc "wb $w clear"
@@ -522,7 +521,7 @@ fullgen(){
     
     # return value used to calculation if any played the day, so no per function is used!
     playerdatadate=$(stat -c "%Y" "$origworlddir/playerdata/")
-    playerdata2date=$(stat -c "%Y" "$origworld2dir/playerdata/")
+    #playerdata2date=$(stat -c "%Y" "$origworld2dir/playerdata/")
     yesterday=$(date -d "24 hours ago" +%s)
     if [[ $yesterday -ge $playerdatadate ]] && [[ $(date '+%d') != 01 ]]; then
     #if ([[ $yesterday -ge $playerdatadate ]] || [[ $yesterday -ge $playerdata2date ]]) && [[ $(date '+%d') != 01 ]]; then
