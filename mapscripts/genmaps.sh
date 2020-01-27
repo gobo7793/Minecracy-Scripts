@@ -33,11 +33,12 @@ initscript="/home/minecraft/initscript"
 backupinfosrc="/home/minecraft/backups/script_resource"
 
 # image/config sources
+# layer file extension will be added on exection!
 raster5k="$configdir/raster5k.png"
 projectlayer="$configdir/w5-projektlayer"
-railwaylayer="$configdir/w5-bahnhoflayer"
+railwaylayer="$configdir/w5-bahnlayer"
 projectlayer2="$configdir/w6-projektlayer"
-railwaylayer2="$configdir/w6-bahnhoflayer"
+railwaylayer2="$configdir/w6-bahnlayer"
 
 #railcolors="$configdir/tmcmr-colors-bahn.txt"
 railcolors="$configdir/block-colors-rails.json"
