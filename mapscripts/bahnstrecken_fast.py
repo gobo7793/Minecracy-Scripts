@@ -49,7 +49,7 @@ def getTrackImage(im,
                              threshold_max,
                              cv2.THRESH_BINARY)
     # obtain blob contours
-    contours, _ = cv2.findContours(thresh,
+    _, contours, _ = cv2.findContours(thresh,
                                    cv2.RETR_TREE,
                                    cv2.CHAIN_APPROX_SIMPLE)
 
