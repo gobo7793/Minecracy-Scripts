@@ -16,3 +16,7 @@
 /home/minecraft/world6_creative
 /home/minecraft/world6_nether
 /home/minecraft/world6_the_end
+/home/minecraft/scripts/.git/objects
+/home/minecraft/maps/BlockMap/.git/objects
+/home/minecraft/maps/BlockMap/BlockMap-gui/build
+/home/minecraft/maps/Overviewer/.git/objects
