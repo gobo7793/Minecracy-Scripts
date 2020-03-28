@@ -16,13 +16,13 @@ mapstargetdir="$mapsdir/maps.minecracy.de"
 configdir="$mapsdir/config"
 maplogdir="$mapsdir/logs"
 origworlddir="/home/minecraft/$world"
-origworld2dir="/home/minecraft/$world2"
+origworlddir2="/home/minecraft/$world2"
 dailydir="/home/minecraft/backups/daily"
 weeklydir="/home/minecraft/backups/weekly"
 monthlydir="/home/minecraft/backups/monthly"
 
 # tool directories
-mapgentool="$mapsdir/BlockMap/BlockMap-cli-1.5.1.1.jar"
+mapgentool="$mapsdir/BlockMap/BlockMap-cli-1.6.2.jar"
 overviewerdir="$mapsdir/Overviewer"
 railwayscript="$mapsdir/bahnstrecken_fast.py"
 trimtool="$mapsdir/Minecraft-Map-Auto-Trim/mmat-fix.jar"
@@ -510,13 +510,15 @@ fullgen(){
     
     # return value used to calculation if any played the day, so no per function is used!
     playerdatadate=$(stat -c "%Y" "$origworlddir/playerdata/")
-    playerdata2date=$(stat -c "%Y" "$origworld2dir/playerdata/")
+    playerdatadate2=$(stat -c "%Y" "$origworlddir2/playerdata/")
     yesterday=$(date -d "24 hours ago" +%s)
-    #if [[ $yesterday -ge $playerdatadate ]] && [[ $(date '+%d') != 01 ]]; then
-    if ([[ $yesterday -ge $playerdatadate ]] || [[ $yesterday -ge $playerdata2date ]]) && [[ $(date '+%d') != 01 ]]; then
-        log "Letzter Spieler offline am $(stat -c "%y" "$dailydir/$world/playerdata/")."
-        log "Breche Kartenscript ab, da Datum vor $(date -d "24 hours ago")."
-        return
+    if [[ $yesterday -ge $playerdatadate ]] && [[ $(date '+%d') != 01 ]]; then
+        if [[ $yesterday -ge $playerdatadate2 ]] && [[ $(date '+%d') != 01 ]]; then
+            log "Letzter Spieler in $world ging offline am $playerdatadate."
+            log "Letzter Spieler in $world2 ging offline am $playerdatadate2."
+            log "Breche Kartenscript ab, da vor $yesterday."
+            return
+        fi
     fi
     
     mcsd "Kartenscript wurde gestartet!"
