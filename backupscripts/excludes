@@ -9,6 +9,9 @@
 /boot
 /var/lib/mysql
 /home/minecraft/.cache
+/home/minecraft/config
+/home/minecraft/mods
+/home/minecraft/plugins
 /home/minecraft/world5
 /home/minecraft/world5_nether
 /home/minecraft/world5_the_end
