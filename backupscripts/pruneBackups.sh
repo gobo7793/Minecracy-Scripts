@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ROOTDIR="/home/mybackup/backups"
-LOGDIR="/home/mybackup/backuplogs"
+LOGDIR="/home/mybackup/logs"
 
 # copy all output to logfile
 #exec > >(tee -i ${LOG})
