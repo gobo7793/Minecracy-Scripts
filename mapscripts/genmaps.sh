@@ -22,7 +22,7 @@ weeklydir="/home/minecraft/backups/weekly"
 monthlydir="/home/minecraft/backups/monthly"
 
 # tool directories
-mapgentool="$mapsdir/BlockMap/BlockMap-cli-1.6.2.jar"
+mapgentool="$mapsdir/BlockMap/BlockMap-cli-2.1.0.jar"
 overviewerdir="$mapsdir/Overviewer"
 railwayscript="$mapsdir/bahnstrecken_fast.py"
 trimtool="$mapsdir/Minecraft-Map-Auto-Trim/mmat-fix.jar"
@@ -135,18 +135,22 @@ tmuxsend(){
 # Generates new 2D map
 # $1: world directory
 # $2: world size
-# $3: colormap name (optional)
-# $4: subdirectory in world directory for target (only if $3 given)
+# $3: dimension (optional)
+# $4: colormap name (optional)
+# $5: subdirectory in world directory for target (only if $3 given)
 tmcmr(){
     local w="$1"
     local size="$2"
-    if [[ -n $3 && -n $4 ]]; then
-        local colormap="--color-map $3 --shader=FLAT"
-        local subdir="/$4"
+    if [[ -n $3 ]]; then
+        local dimension="--dimension $3"
+    fi
+    if [[ -n $4 && -n $5 ]]; then
+        local colormap="--color-map $4 --shader=FLAT"
+        local subdir="/$5"
     fi
 
     #per "/usr/bin/java -jar $mapgentool render --lazy --create-big-image --create-tile-html $colormap --max-X=$size --max-Z=$size --min-X=-$size --min-Z=-$size -o $mapstargetdir/$w$subdir/tmcmr/ $dailydir/$w/region/" #old blockmap syntax
-    per "/usr/bin/java -jar $mapgentool render --lazy --create-big-image --create-tile-html $colormap --max-X=$size --max-Z=$size --min-X=-$size --min-Z=-$size -o $mapstargetdir/$w$subdir/tmcmr/ $dailydir/$w/region/"
+    per "/usr/bin/java -jar $mapgentool render --create-big-image --create-tile-html $colormap $dimension --max-X=$size --max-Z=$size --min-X=-$size --min-Z=-$size  -o $mapstargetdir/$w$subdir/tmcmr/ $dailydir/$w/"
 }
 
 # Renews the overviewer and markers
@@ -436,7 +440,7 @@ gen2drail(){
     local railwaysvg="$4.svg"
     local railwaypng="$4.png"
 
-    tmcmr $w $worldmax RAILS bahn
+    tmcmr $w $worldmax OVERWORLD RAILS bahn
 
     render_svgtoraster $railwaysvg $railwaypng
     per python3 $railwayscript "$basedir/tmcmr/big.png" $rawlayerfile
@@ -584,7 +588,9 @@ Commands:
                                       Possible options:
                                         ct: --chek-tiles option for OV
                                         poi: generate POIs instead of the map
-  tmcmr <world> [colormap subdir]   Renews 2D map, optionally using colormap
+  tmcmr <world> [DIMNESION] [colormap subdir]
+                                    Renews 2D map of DIMNESION (default to
+                                      OVERWORLD), optionally using colormap
                                       and to world subdir as destination
 
   daily                             Generates all daily maps. Only executes if
