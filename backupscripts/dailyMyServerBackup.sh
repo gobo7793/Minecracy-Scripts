@@ -36,7 +36,7 @@ borg create -v --stats                                  \
     --exclude /home/minecraft/world5                    \
     --exclude /home/minecraft/world5_nether             \
     --exclude /home/minecraft/world5_the_end            \
-    --exclude '/home/minecraft/world6*'                 \
+    --exclude /home/minecraft/world6_creative           \
     --exclude '/home/minecraft/maps/*/.git/objects/*'   \
     --exclude '/home/minecraft/maps/BlockMap/*/build'
 

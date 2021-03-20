@@ -549,7 +549,7 @@ fullgen(){
     log "Beginne mit Kartengenerierung"
 
     gen2d $world $worldmax true
-    gen2d $world2 $world2max true
+    #gen2d $world2 $world2max true
     gen2d $worldc $worldcmax false
     
     if [[ $(date '+%d') == 01 ]]; then
