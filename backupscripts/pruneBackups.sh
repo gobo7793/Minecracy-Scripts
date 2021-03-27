@@ -10,11 +10,11 @@ LOGDIR="/home/mybackup/logs"
 echo "Pruning backup for minecracy server on $(date)"
 
 borg prune -v ${ROOTDIR} \
---keep-daily=7 \
---keep-weekly=4 \
---keep-monthly=6
-
-echo "Pruning finished"
+        --keep-daily=90 \
+        --keep-weekly=52 \
+        --keep-monthly=36
 
 # prune logfiles
-find $LOGDIR/ -mtime +183 -type f -delete
+find $LOGDIR/ -mtime +365 -type f -delete
+
+echo "Pruning finished on $(date)"
