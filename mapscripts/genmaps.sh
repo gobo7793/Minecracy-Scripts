@@ -22,7 +22,7 @@ weeklydir="/home/minecraft/backups/weekly"
 monthlydir="/home/minecraft/backups/monthly"
 
 # tool directories
-mapgentool="$mapsdir/BlockMap/BlockMap-cli-2.1.0.jar"
+mapgentool="$mapsdir/BlockMap/BlockMap-cli-2.3.0.jar"
 overviewerdir="$mapsdir/Overviewer"
 railwayscript="$mapsdir/bahnstrecken_fast.py"
 trimtool="$mapsdir/Minecraft-Map-Auto-Trim/mmat-fix.jar"
