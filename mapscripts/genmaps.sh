@@ -2,12 +2,12 @@
 
 # current world names
 world="world5"
-world2="world6"
+world2="world7"
 worldc="world6_creative"
 
 # world sizes
 worldmax=5000
-world2max=1500
+world2max=2500
 worldcmax=500
 
 # base directories
@@ -549,7 +549,7 @@ fullgen(){
     log "Beginne mit Kartengenerierung"
 
     gen2d $world $worldmax true
-    #gen2d $world2 $world2max true
+    gen2d $world2 $world2max true
     gen2d $worldc $worldcmax false
     
     if [[ $(date '+%d') == 01 ]]; then
