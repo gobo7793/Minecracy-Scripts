@@ -1,7 +1,8 @@
 #!/bin/bash
 
-ROOTDIR="/home/mybackup/backups"
-LOGDIR="/home/mybackup/logs"
+# ROOTDIR="/home/mybackup/backups"
+# LOGDIR="/home/mybackup/logs"
+source "$0/repodata.sh"  # define ROOTDIR and LOGDIR here
 
 # copy all output to logfile
 #exec > >(tee -i ${LOG})
