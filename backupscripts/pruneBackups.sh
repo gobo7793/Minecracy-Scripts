@@ -14,6 +14,9 @@ borg prune -v ${ROOTDIR} \
         --keep-weekly=52 \
         --keep-monthly=36
 
+# make sure repo is unlocked after
+borg break-lock ${ROOTDIR}
+
 # prune logfiles
 find $LOGDIR/ -mtime +365 -type f -delete
 
